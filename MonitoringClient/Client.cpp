@@ -6,10 +6,15 @@ Client::Client()
 	this->MONITORED_ACCOUNTS = new std::vector<Account>();
 	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
 	this->ACCOUNTS_TRACKED = new std::map<std::string, time_t>();
+	this->PROGRAM_LIST = new std::vector<std::string>();
 }
 
 Client::~Client()
 {
+	delete MONITORED_ACCOUNTS;
+	delete EXPIRED_ACCOUNTS;
+	delete ACCOUNTS_TRACKED;
+	delete PROGRAM_LIST;
 }
 
 void Client::Run()
@@ -30,8 +35,12 @@ void Client::Run()
 
 void Client::gather()
 {
+	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");
+
 	while (RUNNING)
 	{
+		std::cout << "New GATHER cycle." << std::endl;
+
 		if ( this->loggedIn() )
 		{
 			/*
@@ -39,13 +48,17 @@ void Client::gather()
 				- Create data event
 				- Add data to list to be sent off to the server at the next network send
 			*/
-			if ( this->isProgramRunning("chrome") )
+			for (int i = 0; i < this->PROGRAM_LIST->size(); ++i)
 			{
-				// Turn programs bit on
-			}
+				if (this->isProgramRunning(this->PROGRAM_LIST->at(i)))
+				{
+					std::cout << "Found " << this->PROGRAM_LIST->at(i) << " running" << std::endl;
+				}
+			}			
 		}
 		else
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+		boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 	}
 
 	// Shutdown any gather specfic stuff here
@@ -74,7 +87,7 @@ void Client::administration()
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		else
 		{
-			_ERROR_CODE = this->accountAdministration();
+			//_ERROR_CODE = this->accountAdministration();
 		}
 		Sleep(5000);
 	}
@@ -280,7 +293,7 @@ bool Client::isProgramRunning(std::string p)
 	HANDLE hProcessSnap;
 	PROCESSENTRY32 pe32;
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	pexe_ = p + ".exe";
+	pexe_ = p;// +".exe";
 
 	if (hProcessSnap == INVALID_HANDLE_VALUE)
 	{
@@ -302,12 +315,23 @@ bool Client::isProgramRunning(std::string p)
 			{
 				compare = pe32.szExeFile;
 				std::string s = std::string(compare);
-				if (pexe_.compare(s) == 0)
+
+				boost::regex _program("^" + pexe_, boost::regex::perl | boost::regex::icase);
+				boost::match_results<std::string::const_iterator> _results;
+				std::string::const_iterator start = s.begin();
+				std::string::const_iterator end = s.end();
+				if (boost::regex_search(start, end, _results, _program))
 				{
-					// if found running, set to true and break loop
+					std::cout << "Program: " << pexe_ << " Process: " << s << std::endl;
 					return true;
-					break;
 				}
+
+				//if (pexe_.compare(s) == 0)
+				//{
+					// if found running, set to true and break loop
+				//	return true;
+				//	break;
+				//}
 			}
 		}
 		CloseHandle(hProcessSnap);
@@ -358,4 +382,21 @@ std::string Client::getPort()
 
 void Client::readConfig(std::string file)
 {
+}
+
+void Client::readProgramFile(std::string path)
+{
+	try {
+		std::ifstream file(path);
+		std::string program;
+		while (std::getline(file, program))
+		{
+			if (!program.empty())
+				this->PROGRAM_LIST->push_back(program);
+		}
+	}
+	catch (std::exception &e)
+	{
+
+	}
 }

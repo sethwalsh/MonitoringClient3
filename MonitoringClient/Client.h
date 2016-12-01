@@ -12,6 +12,8 @@
 #include <UserEnv.h>
 #pragma comment(lib, "Userenv.lib")
 #pragma comment(lib, "Wtsapi32.lib")
+#include <fstream>
+#include <iostream>
 
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
@@ -38,6 +40,7 @@ public:
 	void setPort(std::string p);
 	std::string getPort();
 	void readConfig(std::string file);
+	void readProgramFile(std::string path);
 
 private:
 
@@ -75,6 +78,8 @@ private:
 	std::vector<Account> *MONITORED_ACCOUNTS;
 	std::map<std::string, time_t> *ACCOUNTS_TRACKED; // contains any users that have logged into the machine but who's time hasn't expired yet
 	std::vector<std::string> *EXPIRED_ACCOUNTS; // contains any users whos time has expired
+
+	std::vector<std::string> *PROGRAM_LIST; // contains the list of monitored programs
 
 	boost::mutex data_mtx_, li_mtx_;
 };
