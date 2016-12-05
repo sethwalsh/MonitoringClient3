@@ -51,6 +51,7 @@ private:
 	bool loggedIn();
 
 	bool isProgramRunning(std::string p);
+	void increaseProgramCount(std::string p);
 	void *buildPacket();
 
 	std::string getCurrentUser();
@@ -80,6 +81,7 @@ private:
 	std::vector<std::string> *EXPIRED_ACCOUNTS; // contains any users whos time has expired
 
 	std::vector<std::string> *PROGRAM_LIST; // contains the list of monitored programs
+	std::map<std::string, int> CURRENT_PROGRAM_COUNT; // contains a map of the current program count for a given watched increment
 
 	boost::mutex data_mtx_, li_mtx_;
 };

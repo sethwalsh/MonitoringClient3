@@ -53,6 +53,9 @@ void Client::gather()
 				if (this->isProgramRunning(this->PROGRAM_LIST->at(i)))
 				{
 					std::cout << "Found " << this->PROGRAM_LIST->at(i) << " running" << std::endl;
+					// Flip the programs bit
+
+					this->increaseProgramCount(this->PROGRAM_LIST->at(i));
 				}
 			}			
 		}
@@ -293,7 +296,7 @@ bool Client::isProgramRunning(std::string p)
 	HANDLE hProcessSnap;
 	PROCESSENTRY32 pe32;
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	pexe_ = p;// +".exe";
+	pexe_ = p +".exe";
 
 	if (hProcessSnap == INVALID_HANDLE_VALUE)
 	{
@@ -338,6 +341,11 @@ bool Client::isProgramRunning(std::string p)
 	}
 #endif
 	return false;
+}
+
+void Client::increaseProgramCount(std::string p)
+{
+	this->CURRENT_PROGRAM_COUNT[p] = 1;
 }
 
 void * Client::buildPacket()
