@@ -35,7 +35,7 @@ void Client::Run()
 
 void Client::gather()
 {
-	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");
+	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");	
 
 	while (RUNNING)
 	{
@@ -400,7 +400,10 @@ void Client::readProgramFile(std::string path)
 		while (std::getline(file, program))
 		{
 			if (!program.empty())
+			{
 				this->PROGRAM_LIST->push_back(program);
+				this->CURRENT_PROGRAM_COUNT[program] = 0;
+			}
 		}
 	}
 	catch (std::exception &e)
