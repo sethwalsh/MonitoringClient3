@@ -5,7 +5,7 @@ Data::Data(int pcount)
 	MAX_PROGRAM_COUNT = pcount;
 
 	// Set the initial EVENT to 0
-	this->EVENT = new std::vector<uint8_t>();
+	this->EVENT = new std::vector<bool>();
 }
 
 Data::~Data()
@@ -13,26 +13,16 @@ Data::~Data()
 	delete EVENT;
 }
 
-std::vector<unsigned char> Data::BuildEvent(int flag, std::string pdata, std::string user)
+void Data::setUser(std::string user)
 {
-	std::vector<unsigned char> _result;
-	uint16_t _flag = flag;
-	this->EVENT->push_back(_flag);
-
-	return _result;
+	this->USER = user;
 }
 
-bool Data::SetUser(std::string u)
+void Data::setTime()
 {
-	return false;
-}
-
-bool Data::SetProgramBit(int pos, bool on)
-{
-	return false;
-}
-
-void Data::EchoEvent()
-{
-	
+	time_t temp = time(0);
+	time_t t1 = temp;
+	temp -= temp % 60;
+	this->TIME = (temp%60);	
+	int x = 33;
 }

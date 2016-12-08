@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <time.h>
 
 using namespace std;
 
@@ -9,13 +10,14 @@ class Data
 public:
 	Data(int pcount);	
 	~Data();
-	std::vector<uint8_t> BuildEvent(int flag, std::string pdata, std::string user);
-	bool SetUser(std::string u);
-	bool SetProgramBit(int pos, bool on);
-	void EchoEvent();
+
+	void setUser(std::string user);
+	void setTime();
+	void setDataBit(int pos);
 
 private:
-	std::vector<uint8_t> *EVENT;
-	std::string *USER;
+	std::vector<bool> *EVENT;
+	std::string USER;
 	int MAX_PROGRAM_COUNT = 0;
+	time_t TIME;
 };

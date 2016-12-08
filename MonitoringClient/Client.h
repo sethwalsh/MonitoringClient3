@@ -52,6 +52,8 @@ private:
 
 	bool isProgramRunning(std::string p);
 	void increaseProgramCount(std::string p);
+	void resetProgramCount();
+	void buildEvent();
 	void *buildPacket();
 
 	std::string getCurrentUser();

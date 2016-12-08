@@ -33,6 +33,9 @@ void Client::Run()
 	athread_.join();		
 }
 
+/***
+	Count running tracked programs
+***/
 void Client::gather()
 {
 	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");	
@@ -43,6 +46,13 @@ void Client::gather()
 
 		if ( this->loggedIn() )
 		{
+			time_t _current = time(0);
+			struct tm *now = localtime(&_current);
+			if (now->tm_sec == 0)
+			{
+				this->buildEvent();
+				this->resetProgramCount();
+			}
 			/*
 			- Get current programs in use
 				- Create data event
@@ -346,6 +356,21 @@ bool Client::isProgramRunning(std::string p)
 void Client::increaseProgramCount(std::string p)
 {
 	this->CURRENT_PROGRAM_COUNT[p] = 1;
+}
+
+void Client::resetProgramCount()
+{
+	std::map<std::string, int>::iterator it;
+	for (it = this->CURRENT_PROGRAM_COUNT.begin(); it != this->CURRENT_PROGRAM_COUNT.end(); it++)
+		it->second = 0;
+}
+
+void Client::buildEvent()
+{
+	std::cout << "Building new EVENT" << std::endl;
+	Data d(this->PROGRAM_LIST->size());
+	d.setTime();
+	int x = 33;
 }
 
 void * Client::buildPacket()
