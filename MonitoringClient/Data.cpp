@@ -5,7 +5,7 @@ Data::Data(int pcount)
 	MAX_PROGRAM_COUNT = pcount;
 
 	// Set the initial EVENT to 0
-	this->EVENT = new std::vector<bool>();
+	this->EVENT = new std::vector<bool>(MAX_PROGRAM_COUNT);
 }
 
 Data::~Data()
@@ -23,6 +23,10 @@ void Data::setTime()
 	time_t temp = time(0);
 	time_t t1 = temp;
 	temp -= temp % 60;
-	this->TIME = (temp%60);	
-	int x = 33;
+	this->TIME = temp;	
+}
+
+void Data::setDataBit(int pos, bool value)
+{
+	this->EVENT->at(pos) = value;	
 }

@@ -38,7 +38,12 @@ void Client::Run()
 ***/
 void Client::gather()
 {
-	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");	
+	this->readProgramFile("D:\\GitHub Projects\\MonitoringClient3\\Debug\\masterlist.txt");
+	//this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");
+
+	time_t _current = time(0);
+	struct tm *now = localtime(&_current);
+	int _CURRENT_MINUTE = now->tm_min;
 
 	while (RUNNING)
 	{
@@ -46,12 +51,18 @@ void Client::gather()
 
 		if ( this->loggedIn() )
 		{
-			time_t _current = time(0);
-			struct tm *now = localtime(&_current);
-			if (now->tm_sec == 0)
+			_current = time(0);
+			now = localtime(&_current);
+			if (now->tm_min != _CURRENT_MINUTE)
 			{
+				std::cout << "Building EVENT.." << std::endl;
 				this->buildEvent();
+
+				std::cout << "Reseting program count.." << std::endl;
 				this->resetProgramCount();
+
+				std::cout << "Setting current_minute to new minute" << std::endl;
+				_CURRENT_MINUTE = now->tm_min;
 			}
 			/*
 			- Get current programs in use
@@ -370,7 +381,21 @@ void Client::buildEvent()
 	std::cout << "Building new EVENT" << std::endl;
 	Data d(this->PROGRAM_LIST->size());
 	d.setTime();
-	int x = 33;
+	
+	d.setUser(this->CURRENT_USER);
+
+	std::map<std::string, int>::iterator it;
+	int _count = 0;
+	for (it = this->CURRENT_PROGRAM_COUNT.begin(); it != this->CURRENT_PROGRAM_COUNT.end(); it++)
+	{
+		if (it->second == 1)
+		{
+			int x = 33;
+		}
+		d.setDataBit(_count, it->second);
+		_count++;
+	}
+	int y = 7;
 }
 
 void * Client::buildPacket()

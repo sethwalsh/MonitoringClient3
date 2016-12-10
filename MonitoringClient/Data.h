@@ -13,7 +13,7 @@ public:
 
 	void setUser(std::string user);
 	void setTime();
-	void setDataBit(int pos);
+	void setDataBit(int pos, bool value);
 
 private:
 	std::vector<bool> *EVENT;
