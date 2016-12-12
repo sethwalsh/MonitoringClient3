@@ -426,8 +426,6 @@ void Client::writeDataToDisk()
 	{
 		if ((*it) == TRUE)
 		{
-			// shift left to the correct index position then logical AND with 1
-			//_DATA = _DATA | (1 << count);
 			save << "1";
 		}
 		else
@@ -435,8 +433,7 @@ void Client::writeDataToDisk()
 		count++;
 	}	
 	this->data_mtx_.unlock();
-	save << "\n";
-	//save << temp << "," << this->getCurrentUser() << "," << _DATA << "\n";
+	save << "\n";	
 }
 
 std::string Client::getCurrentUser()

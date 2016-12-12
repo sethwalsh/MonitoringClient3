@@ -44,23 +44,78 @@ public:
 
 private:
 
+	/**
+		gather - thread function handle to control all the data collection
+	**/
 	void gather();
+
+	/**
+		administration - thread function handle to control all the administration (account management, cleanup, logging, disk cleanup, etc)
+	**/
 	void administration();
+
+	/**
+		network - thread function handle to control all the network aspects of the system
+	**/
 	void network();	
 
+	/**
+		loggedIn - checks if the machine is currently logged in
+
+		@return		true if logged in, false otherwise
+	**/
 	bool loggedIn();
 
+	/**
+		isProgramRunning - checks wether the given program name is found running in the process list
+
+		@param	p	program name to look for
+		@return		true if found, false otherwise
+	**/
 	bool isProgramRunning(std::string p);
+
+	/**
+		increaseProgramCount - flips the bit for the given program to the running position
+
+		@param	p	program process name as a string
+	**/
 	void increaseProgramCount(std::string p);
+
+	/**
+		resetProgramCount - resets the program found count to all zeros at the end of each gathering cycle.
+	**/
 	void resetProgramCount();
+
+	/**
+		buildDataObject - builds a Data object for the current minute containing a user name string, time_t timestamp, and binary string of running tracked
+		programs.
+	**/
 	void buildDataObject();
+
+	/**
+		buildPacket - converts programs found running into a binary representative string indicating running or not
+	**/
 	void *buildPacket();
+
+	/**
+		writeDataToDisk - writes the current minutes program data to a file on disk in case of a system crash to prevent loss of data
+	**/
 	void writeDataToDisk();
 
-	std::string getCurrentUser();
-	void setCurrentUser(std::string s);
-	//void setCurrentUser();
+	/**
+		getCurrentUser - return the current user logged into the machine
 
+		@return		a string containing the currently logged in users name
+	**/
+	std::string getCurrentUser();
+
+	/**
+		setCurrentUser - sets the current user to the currently logged in users name
+
+		@param		s	a string containing the user name to be set to
+	**/
+	void setCurrentUser(std::string s);
+	
 	/// Administration functions
 	int accountAdministration();
 
