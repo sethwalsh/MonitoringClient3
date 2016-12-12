@@ -53,8 +53,9 @@ private:
 	bool isProgramRunning(std::string p);
 	void increaseProgramCount(std::string p);
 	void resetProgramCount();
-	void buildEvent();
+	void buildDataObject();
 	void *buildPacket();
+	void writeDataToDisk();
 
 	std::string getCurrentUser();
 	void setCurrentUser(std::string s);
@@ -84,6 +85,9 @@ private:
 
 	std::vector<std::string> *PROGRAM_LIST; // contains the list of monitored programs
 	std::map<std::string, int> CURRENT_PROGRAM_COUNT; // contains a map of the current program count for a given watched increment
+
+	//std::vector<Data> *DATA_LIST; // contains a list of Data objects to either write to disk or network
+	std::vector<Data*> *DATA_LIST; // contains a list of Data objects to either write to disk or network
 
 	boost::mutex data_mtx_, li_mtx_;
 };

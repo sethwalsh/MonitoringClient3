@@ -7,6 +7,8 @@ Client::Client()
 	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
 	this->ACCOUNTS_TRACKED = new std::map<std::string, time_t>();
 	this->PROGRAM_LIST = new std::vector<std::string>();
+	//this->DATA_LIST = new std::vector<Data>();
+	this->DATA_LIST = new std::vector<Data*>();
 }
 
 Client::~Client()
@@ -15,6 +17,7 @@ Client::~Client()
 	delete EXPIRED_ACCOUNTS;
 	delete ACCOUNTS_TRACKED;
 	delete PROGRAM_LIST;
+	delete DATA_LIST;
 }
 
 void Client::Run()
@@ -35,11 +38,12 @@ void Client::Run()
 
 /***
 	Count running tracked programs
+	Build a Data object each minute
 ***/
 void Client::gather()
 {
-	this->readProgramFile("D:\\GitHub Projects\\MonitoringClient3\\Debug\\masterlist.txt");
-	//this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");
+	//this->readProgramFile("D:\\GitHub Projects\\MonitoringClient3\\Debug\\masterlist.txt");
+	this->readProgramFile("G:\\MonitoringClient\\Debug\\masterlist.txt");
 
 	time_t _current = time(0);
 	struct tm *now = localtime(&_current);
@@ -55,13 +59,16 @@ void Client::gather()
 			now = localtime(&_current);
 			if (now->tm_min != _CURRENT_MINUTE)
 			{
-				std::cout << "Building EVENT.." << std::endl;
-				this->buildEvent();
+				// Build a Data object for the current minute
+				this->buildDataObject();
 
-				std::cout << "Reseting program count.." << std::endl;
-				this->resetProgramCount();
+				// Write Data to disk in case of program failure which would cause a loss of data that had not been uploaded yet
+				this->writeDataToDisk();
 
-				std::cout << "Setting current_minute to new minute" << std::endl;
+				// Reset the program counters for the next cycle
+				this->resetProgramCount();				
+
+				// Reset the current minute
 				_CURRENT_MINUTE = now->tm_min;
 			}
 			/*
@@ -83,9 +90,7 @@ void Client::gather()
 		else
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-	}
-
-	// Shutdown any gather specfic stuff here
+	}	
 }
 
 void Client::administration()
@@ -376,32 +381,62 @@ void Client::resetProgramCount()
 		it->second = 0;
 }
 
-void Client::buildEvent()
+void Client::buildDataObject()
 {
-	std::cout << "Building new EVENT" << std::endl;
-	Data d(this->PROGRAM_LIST->size());
-	d.setTime();
-	
-	d.setUser(this->CURRENT_USER);
+	Data *d = new Data(this->PROGRAM_LIST->size());
+	d->setTime();	
+	d->setUser(this->CURRENT_USER);
 
 	std::map<std::string, int>::iterator it;
-	int _count = 0;
 	for (it = this->CURRENT_PROGRAM_COUNT.begin(); it != this->CURRENT_PROGRAM_COUNT.end(); it++)
 	{
-		if (it->second == 1)
-		{
-			int x = 33;
-		}
-		d.setDataBit(_count, it->second);
-		_count++;
+		int _pos = std::find(this->PROGRAM_LIST->begin(), this->PROGRAM_LIST->end(), it->first) - this->PROGRAM_LIST->begin();		
+		if (_pos < this->PROGRAM_LIST->size())
+			d->setDataBit(_pos, it->second);	
 	}
-	int y = 7;
+	
+	// Push the Data object onto the list
+	this->data_mtx_.lock();
+	this->DATA_LIST->push_back(d);
+	this->data_mtx_.unlock();
 }
 
 void * Client::buildPacket()
 {
 	char *PACKET_;
 	return (void*)PACKET_;
+}
+
+void Client::writeDataToDisk()
+{
+	this->data_mtx_.lock();
+	time_t temp = this->DATA_LIST->back()->getTime();
+	this->data_mtx_.unlock();
+	
+	std::ofstream save("saved_data.txt", std::ios_base::app | std::ios_base::out);
+
+	unsigned int _DATA = 0;
+	save << temp << "," << this->getCurrentUser() << ",";
+	int count = 0;
+
+	this->data_mtx_.lock();
+	std::vector<bool>::iterator it;	
+	std::vector<bool> *_tempData = this->DATA_LIST->back()->getData();
+	for (it = _tempData->begin(); it != _tempData->end(); it++)
+	{
+		if ((*it) == TRUE)
+		{
+			// shift left to the correct index position then logical AND with 1
+			//_DATA = _DATA | (1 << count);
+			save << "1";
+		}
+		else
+			save << "0";
+		count++;
+	}	
+	this->data_mtx_.unlock();
+	save << "\n";
+	//save << temp << "," << this->getCurrentUser() << "," << _DATA << "\n";
 }
 
 std::string Client::getCurrentUser()
@@ -453,6 +488,11 @@ void Client::readProgramFile(std::string path)
 			{
 				this->PROGRAM_LIST->push_back(program);
 				this->CURRENT_PROGRAM_COUNT[program] = 0;
+			}
+			if (program.empty())
+			{
+				this->PROGRAM_LIST->push_back("NOT_A_PROGRAM_FOR_THIS_OS");
+				this->CURRENT_PROGRAM_COUNT["NOT_A_PROGRAM_FOR_THIS_OS"] = 0;
 			}
 		}
 	}

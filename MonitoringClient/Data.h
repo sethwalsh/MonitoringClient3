@@ -13,6 +13,8 @@ public:
 
 	void setUser(std::string user);
 	void setTime();
+	time_t getTime();
+	std::vector<bool>* getData();
 	void setDataBit(int pos, bool value);
 
 private:

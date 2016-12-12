@@ -10,7 +10,8 @@ Data::Data(int pcount)
 
 Data::~Data()
 {
-	delete EVENT;
+	if(EVENT != NULL)
+		delete EVENT;	
 }
 
 void Data::setUser(std::string user)
@@ -24,6 +25,16 @@ void Data::setTime()
 	time_t t1 = temp;
 	temp -= temp % 60;
 	this->TIME = temp;	
+}
+
+time_t Data::getTime()
+{
+	return this->TIME;
+}
+
+std::vector<bool>* Data::getData()
+{
+	return this->EVENT;
 }
 
 void Data::setDataBit(int pos, bool value)
