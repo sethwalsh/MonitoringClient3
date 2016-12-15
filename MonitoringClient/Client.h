@@ -43,6 +43,15 @@ public:
 	void readProgramFile(std::string path);
 
 private:
+	/**
+		scriptAdministration - execute any scripts that have been configured to run like system cleanup etc.
+	**/
+	int scriptAdministration();
+
+	/**
+		log - log any error messages 
+	**/
+	void log(std::string emsg, int ecode, int level);
 
 	/**
 		gather - thread function handle to control all the data collection
@@ -128,6 +137,7 @@ private:
 
 	std::string SERVER_;
 	std::string PORT_;
+	std::string LOG_FILE_ = "log.txt";
 
 	// Store the currently logged in user name as a string pointer
 	std::string CURRENT_USER;

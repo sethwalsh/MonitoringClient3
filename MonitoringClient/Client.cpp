@@ -52,6 +52,9 @@ void Client::gather()
 	while (RUNNING)
 	{
 		std::cout << "New GATHER cycle." << std::endl;
+		//log("test", 1, 1); log ERROR with error code 1
+		//log("test", 0, 0); log WARN with no error code
+		//log("test", 0, 1); log WARN with error code 1
 
 		if ( this->loggedIn() )
 		{
@@ -80,9 +83,7 @@ void Client::gather()
 			{
 				if (this->isProgramRunning(this->PROGRAM_LIST->at(i)))
 				{
-					std::cout << "Found " << this->PROGRAM_LIST->at(i) << " running" << std::endl;
 					// Flip the programs bit
-
 					this->increaseProgramCount(this->PROGRAM_LIST->at(i));
 				}
 			}			
@@ -117,6 +118,16 @@ void Client::administration()
 		else
 		{
 			//_ERROR_CODE = this->accountAdministration();
+
+			//_ERROR_CODE = this->scriptAdministration();
+
+			//_ERROR_CODE = this->diskCleanup();			
+			/**
+			- scripts
+			- disk space
+			- guest accounts
+			- messaging
+			**/
 		}
 		Sleep(5000);
 	}
@@ -448,6 +459,11 @@ void Client::setCurrentUser(std::string s)
 
 void Client::kick()
 {
+	SetLastError(0);
+	if (!WTSLogoffSession(WTS_CURRENT_SERVER_HANDLE, WTSGetActiveConsoleSessionId(), FALSE))
+	{
+		//log("Failed to logoff user.", 1, 0);
+	}
 }
 
 void Client::setServer(std::string s)
@@ -492,6 +508,37 @@ void Client::readProgramFile(std::string path)
 				this->CURRENT_PROGRAM_COUNT["NOT_A_PROGRAM_FOR_THIS_OS"] = 0;
 			}
 		}
+	}
+	catch (std::exception &e)
+	{
+
+	}
+}
+
+int Client::scriptAdministration()
+{
+	/**
+	- for every script check the time and if it is time then execute the script
+	**/
+
+	return 0;
+}
+
+void Client::log(std::string emsg, int ecode, int level)
+{
+	try {
+		std::ofstream log(LOG_FILE_, std::ios_base::app | std::ios_base::out);
+		time_t t = time(0);
+		struct tm *now = localtime(&t);
+
+		// Level = 1 is an Error, all other levels are a Warning
+		if (level == 1)
+			log << "ERROR    " << emsg << "    ";
+		else
+			log << "WARNING    " << emsg << "    ";
+		if (ecode > 0)
+			log << ecode << "    ";
+		log << asctime(now);		
 	}
 	catch (std::exception &e)
 	{

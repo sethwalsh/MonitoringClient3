@@ -159,6 +159,7 @@
     <ClInclude Include="Data.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="Script.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
