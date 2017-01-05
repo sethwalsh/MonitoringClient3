@@ -9,6 +9,22 @@ Client::Client()
 	this->PROGRAM_LIST = new std::vector<std::string>();
 	//this->DATA_LIST = new std::vector<Data>();
 	this->DATA_LIST = new std::vector<Data*>();
+	this->SCRIPT_LIST = new std::vector<Script>();
+}
+
+Client::Client(std::string cpath)
+{
+	// Read configuration settings and set the appropriate members
+	this->readConfig(cpath);
+
+	this->RUNNING = true;
+	this->MONITORED_ACCOUNTS = new std::vector<Account>();
+	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
+	this->ACCOUNTS_TRACKED = new std::map<std::string, time_t>();
+	this->PROGRAM_LIST = new std::vector<std::string>();
+	//this->DATA_LIST = new std::vector<Data>();
+	this->DATA_LIST = new std::vector<Data*>();
+	this->SCRIPT_LIST = new std::vector<Script>();
 }
 
 Client::~Client()
@@ -18,6 +34,7 @@ Client::~Client()
 	delete ACCOUNTS_TRACKED;
 	delete PROGRAM_LIST;
 	delete DATA_LIST;
+	delete SCRIPT_LIST;
 }
 
 void Client::Run()
@@ -520,7 +537,22 @@ int Client::scriptAdministration()
 	/**
 	- for every script check the time and if it is time then execute the script
 	**/
+	for (int i = 0; i < this->SCRIPT_LIST->size(); i++)
+	{
+		time_t t = time(0);
+		struct tm *now = localtime(&t);
+		Script s = this->SCRIPT_LIST->at(i);
 
+		if (now->tm_hour == s._hour && now->tm_min == s._minute)
+		{
+			// Sunday == 0 ... Saturday == 6
+			if (s._weekdays[now->tm_wday] == 1)
+			{
+				// current minute, hour, day matched so execute this script
+
+			}
+		}
+	}
 	return 0;
 }
 

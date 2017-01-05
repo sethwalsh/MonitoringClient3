@@ -3,6 +3,7 @@
 #include "NetClient.cpp"
 #include "Account.h"
 #include "error.h"
+#include "Script.h"
 
 #include <Windows.h>
 #include <TlHelp32.h>
@@ -31,6 +32,7 @@ class Client
 {
 public:
 	Client();
+	Client(std::string cpath);
 	~Client();
 	
 	void Run();
@@ -39,10 +41,11 @@ public:
 	std::string getServer();
 	void setPort(std::string p);
 	std::string getPort();
-	void readConfig(std::string file);
 	void readProgramFile(std::string path);
 
 private:
+	void readConfig(std::string file);
+
 	/**
 		scriptAdministration - execute any scripts that have been configured to run like system cleanup etc.
 	**/
@@ -153,6 +156,8 @@ private:
 
 	//std::vector<Data> *DATA_LIST; // contains a list of Data objects to either write to disk or network
 	std::vector<Data*> *DATA_LIST; // contains a list of Data objects to either write to disk or network
+
+	std::vector<Script> *SCRIPT_LIST; // contains a list of all Script objects to be executed
 
 	boost::mutex data_mtx_, li_mtx_;
 };
