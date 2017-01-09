@@ -505,6 +505,14 @@ std::string Client::getPort()
 
 void Client::readConfig(std::string file)
 {
+	try {
+		boost::property_tree pt;
+
+	}
+	catch (std::exception &e)
+	{
+		/// TODO:: logging
+	}
 }
 
 void Client::readProgramFile(std::string path)
