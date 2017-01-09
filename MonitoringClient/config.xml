@@ -1,0 +1,15 @@
+<server>localhost</server>
+<port>16000</port>
+<log>errr.log</log>
+<Users>
+	<Account>
+		<name>Seth</name>
+		<blocked>FALSE</blocked>
+		<hour>1</hour>
+	</Account>
+	<Account>
+		<name>Test2</name>
+		<blocked>TRUE</blocked>
+		<hour>2</hour>
+	</Account>
+</Users>

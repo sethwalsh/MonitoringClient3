@@ -2,6 +2,12 @@
 
 Client::Client()
 {
+	/// Default config settings are being used so statically set them here
+	this->setServer("localhost");
+	this->setPort("16000");
+	this->readConfig("G:\\MonitoringClient\\Debug\\config"); // any settings found in config can now override their default state
+
+
 	this->RUNNING = true;
 	this->MONITORED_ACCOUNTS = new std::vector<Account>();
 	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
@@ -113,13 +119,13 @@ void Client::gather()
 
 void Client::administration()
 {	
-	Account a;
-	a.BLOCKED = FALSE;
+	//Account a;
+	//a.BLOCKED = FALSE;
 	//a.BLOCKED = TRUE;
-	a.NAME_REGEX = "Se";
-	a.HOUR = 1;
+	//a.NAME_REGEX = "Se";
+	//a.HOUR = 1;
 
-	this->MONITORED_ACCOUNTS->push_back(a);
+	//this->MONITORED_ACCOUNTS->push_back(a);
 
 	//std::vector<Account> *MONITORED_ACCOUNTS;
 	//std::map<std::string, time_t> *ACCOUNTS_TRACKED; // contains any users that have logged into the machine but who's time hasn't expired yet
@@ -134,7 +140,7 @@ void Client::administration()
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
 		else
 		{
-			//_ERROR_CODE = this->accountAdministration();
+			_ERROR_CODE = this->accountAdministration();
 
 			//_ERROR_CODE = this->scriptAdministration();
 
@@ -525,13 +531,33 @@ void Client::readConfig(std::string file)
 		**/
 		this->SERVER_ = _pt.get<std::string>("server");
 		this->PORT_ = _pt.get<int>("port");
-		this->LOG_FILE_ = _pt.get<std::string>("log.path");
+		this->LOG_FILE_ = _pt.get<std::string>("log");
+		
+		BOOST_FOREACH(boost::property_tree::ptree::value_type &v, _pt.get_child("Users")) {			
+			Account _a;
+			BOOST_FOREACH(boost::property_tree::ptree::value_type &v1, _pt.get_child("Users.Account")) {
+				if (v1.first == "name")
+					std::string s = v1.second.get<std::string>("name", "NULL").c_str();
+				if (v1.first == "blocked")
+					bool b = v1.second.get<bool>("blocked", FALSE);
+				if (v1.first == "hour")
+					int h = v1.second.get<int>("hour", 2);
+			}			
+		}
 
+		//Account a;
+		//a.BLOCKED = FALSE;
+		//a.BLOCKED = TRUE;
+		//a.NAME_REGEX = "Se";
+		//a.HOUR = 1;
+
+		//this->MONITORED_ACCOUNTS->push_back(a);
 
 	}
 	catch (std::exception &e)
 	{
 		/// TODO:: logging
+		std::cout << e.what() << std::endl;
 	}
 }
 
