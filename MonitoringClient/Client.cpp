@@ -506,7 +506,27 @@ std::string Client::getPort()
 void Client::readConfig(std::string file)
 {
 	try {
-		boost::property_tree pt;
+		boost::property_tree::ptree _pt;
+		boost::property_tree::xml_parser::read_xml(file, _pt);
+
+		/**
+		Server
+		Port
+		Log file
+			- log file size limit
+			- backup or delete
+		Users
+			- Restrictions
+			- Blocked
+			- Messages
+		Scripts
+			- Script path
+			- Script time
+		**/
+		this->SERVER_ = _pt.get<std::string>("server");
+		this->PORT_ = _pt.get<int>("port");
+		this->LOG_FILE_ = _pt.get<std::string>("log.path");
+
 
 	}
 	catch (std::exception &e)
