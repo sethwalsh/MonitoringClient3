@@ -535,14 +535,13 @@ void Client::readConfig(std::string file)
 		
 		BOOST_FOREACH(boost::property_tree::ptree::value_type &v, _pt.get_child("Users")) {			
 			Account _a;
-			BOOST_FOREACH(boost::property_tree::ptree::value_type &v1, _pt.get_child("Users.Account")) {
-				if (v1.first == "name")
-					std::string s = v1.second.get<std::string>("name", "NULL").c_str();
-				if (v1.first == "blocked")
-					bool b = v1.second.get<bool>("blocked", FALSE);
-				if (v1.first == "hour")
-					int h = v1.second.get<int>("hour", 2);
-			}			
+			if (v.first == "Account")
+			{
+				_a.NAME_REGEX = v.second.get<std::string>("name", "NULL").c_str();
+				_a.BLOCKED = v.second.get<bool>("blocked", FALSE);
+				_a.HOUR = v.second.get<int>("hout", 2);
+			}
+			this->MONITORED_ACCOUNTS->push_back(_a);
 		}
 
 		//Account a;

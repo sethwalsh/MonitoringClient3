@@ -4,7 +4,7 @@
 
 struct Account
 {
-	char *NAME_REGEX;
+	const char *NAME_REGEX;
 	bool BLOCKED;
 	int HOUR;	
 };
