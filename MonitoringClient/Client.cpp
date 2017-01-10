@@ -2,27 +2,23 @@
 
 Client::Client()
 {
+	this->RUNNING = true;
+	this->MONITORED_ACCOUNTS = new std::vector<Account>();
+	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
+	this->ACCOUNTS_TRACKED = new std::map<std::string, time_t>();
+	this->PROGRAM_LIST = new std::vector<std::string>();
+	//this->DATA_LIST = new std::vector<Data>();
+	this->DATA_LIST = new std::vector<Data*>();
+	this->SCRIPT_LIST = new std::vector<Script>();
+
 	/// Default config settings are being used so statically set them here
 	this->setServer("localhost");
 	this->setPort("16000");
 	this->readConfig("G:\\MonitoringClient\\Debug\\config"); // any settings found in config can now override their default state
-
-
-	this->RUNNING = true;
-	this->MONITORED_ACCOUNTS = new std::vector<Account>();
-	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
-	this->ACCOUNTS_TRACKED = new std::map<std::string, time_t>();
-	this->PROGRAM_LIST = new std::vector<std::string>();
-	//this->DATA_LIST = new std::vector<Data>();
-	this->DATA_LIST = new std::vector<Data*>();
-	this->SCRIPT_LIST = new std::vector<Script>();
 }
 
 Client::Client(std::string cpath)
 {
-	// Read configuration settings and set the appropriate members
-	this->readConfig(cpath);
-
 	this->RUNNING = true;
 	this->MONITORED_ACCOUNTS = new std::vector<Account>();
 	this->EXPIRED_ACCOUNTS = new std::vector<std::string>();
@@ -31,6 +27,9 @@ Client::Client(std::string cpath)
 	//this->DATA_LIST = new std::vector<Data>();
 	this->DATA_LIST = new std::vector<Data*>();
 	this->SCRIPT_LIST = new std::vector<Script>();
+
+	// Read configuration settings and set the appropriate members
+	this->readConfig(cpath);
 }
 
 Client::~Client()
@@ -241,6 +240,11 @@ int Client::accountAdministration()
 		else
 		{
 			// Add to ACCOUNTS_TRACKED
+			/**
+			_current is NULL ...error!
+			**/
+			_current = new Account();
+
 			std::cout << "This is the first time I've encountered your Account and it is a monitored account so I will begin tracking your logged in time from now until expiration." << std::endl;
 			this->ACCOUNTS_TRACKED->insert(
 				std::pair<std::string, time_t>(
@@ -537,26 +541,19 @@ void Client::readConfig(std::string file)
 			Account _a;
 			if (v.first == "Account")
 			{
-				_a.NAME_REGEX = v.second.get<std::string>("name", "NULL").c_str();
-				_a.BLOCKED = v.second.get<bool>("blocked", FALSE);
-				_a.HOUR = v.second.get<int>("hout", 2);
+				_a.NAME_REGEX = v.second.get_child("name").data().c_str();
+				_a.BLOCKED = atoi(v.second.get_child("blocked").data().c_str());
+				_a.HOUR = v.second.get<int>("hour", 2);
 			}
 			this->MONITORED_ACCOUNTS->push_back(_a);
 		}
-
-		//Account a;
-		//a.BLOCKED = FALSE;
-		//a.BLOCKED = TRUE;
-		//a.NAME_REGEX = "Se";
-		//a.HOUR = 1;
-
-		//this->MONITORED_ACCOUNTS->push_back(a);
-
+		
 	}
 	catch (std::exception &e)
 	{
 		/// TODO:: logging
-		std::cout << e.what() << std::endl;
+		this->log(e.what(), 0x0, 0);
+		//std::cout << e.what() << std::endl;
 	}
 }
 

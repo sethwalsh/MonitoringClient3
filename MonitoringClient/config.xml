@@ -4,12 +4,12 @@
 <Users>
 	<Account>
 		<name>Seth</name>
-		<blocked>FALSE</blocked>
+		<blocked>0</blocked>
 		<hour>1</hour>
 	</Account>
 	<Account>
 		<name>Test2</name>
-		<blocked>TRUE</blocked>
-		<hour>2</hour>
+		<blocked>1</blocked>
+		<hour>4</hour>
 	</Account>
 </Users>
