@@ -13,3 +13,13 @@
 		<hour>4</hour>
 	</Account>
 </Users>
+<Commands>
+	<command>
+		<path>C:\temp\script1.pl</path>
+		<time></time>
+	</command>
+	<command>
+		<path>C:\temp\script2.pl</path>
+		<time></time>
+	</command>
+</Commands>

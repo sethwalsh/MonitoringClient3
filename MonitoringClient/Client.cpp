@@ -548,6 +548,20 @@ void Client::readConfig(std::string file)
 			this->MONITORED_ACCOUNTS->push_back(_a);
 		}
 		
+		BOOST_FOREACH(boost::property_tree::ptree::value_type &v, _pt.get_child("Commands")) {
+			Script _s;
+			int _ID = 0;
+			if (v.first == "command")
+			{
+				_s._id = _ID;
+				
+				_s._name = v.second.get_child("path").data();
+				
+				
+				_ID++;
+			}
+			this->SCRIPT_LIST->push_back(_s);
+		}
 	}
 	catch (std::exception &e)
 	{
@@ -585,7 +599,7 @@ void Client::readProgramFile(std::string path)
 int Client::scriptAdministration()
 {
 	/**
-	- for every script check the time and if it is time then execute the script
+	- for every command check the time and if it is time then execute the command
 	**/
 	for (int i = 0; i < this->SCRIPT_LIST->size(); i++)
 	{
