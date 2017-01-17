@@ -13,13 +13,33 @@
 		<hour>4</hour>
 	</Account>
 </Users>
+<!-- A command can either be a path to a script or executable or system command to be executed at a given time / day of the week.
+	<path>   - contains the path / command to be executed
+	<day>	 - contains the numerical weekday(s) string deliminated by a : where 0 overrides all others in the string
+		 0 - All days
+		 1 - Monday
+		 2 - Tuesday
+		 3 - Wednesday
+		 4 - Thursday
+		 5 - Friday
+		 6 - Saturday
+		 7 - Sunday
+		example - 1:3:5:7 
+
+	<time>   - contains the 24 hour time string signalling when to execute the command (1:30 or 23:15, etc)
+	<repeat> - contains the boolean signalling if to repeat the execution at the next time occurance (0 or False) or (1 or True)
+-->
 <Commands>
 	<command>
 		<path>C:\temp\script1.pl</path>
-		<time></time>
+		<day>0</day>
+		<time>2:30</time>
+		<repeat>0</repeat>
 	</command>
 	<command>
 		<path>C:\temp\script2.pl</path>
-		<time></time>
+		<day>1:3:5:7</day>
+		<time>15:30</time>
+		<repeat>1</repeat>
 	</command>
 </Commands>

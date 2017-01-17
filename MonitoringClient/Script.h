@@ -7,5 +7,6 @@ struct Script
 	int _id;
 	int _hour;
 	int _minute;
+	bool _repeat;
 	int _weekdays[6]{ 0 };
 };

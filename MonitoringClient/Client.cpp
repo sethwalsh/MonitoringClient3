@@ -556,8 +556,9 @@ void Client::readConfig(std::string file)
 				_s._id = _ID;
 				
 				_s._name = v.second.get_child("path").data();
-				
-				
+				///TODO:: design the day time schema to execute commands by
+				std::string _repeat = v.second.get_child("repeat").data();
+				_s._repeat = boost::iequals("False", _repeat);
 				_ID++;
 			}
 			this->SCRIPT_LIST->push_back(_s);
