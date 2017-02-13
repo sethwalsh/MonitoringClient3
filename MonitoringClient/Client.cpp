@@ -14,7 +14,7 @@ Client::Client()
 	/// Default config settings are being used so statically set them here
 	this->setServer("localhost");
 	this->setPort("16000");
-	this->readConfig("G:\\MonitoringClient\\Debug\\config"); // any settings found in config can now override their default state
+	this->readConfig("G:\\MonitoringClient\\Debug\\config"); // any settings found in config can now override their default state		
 }
 
 Client::Client(std::string cpath)
@@ -29,7 +29,7 @@ Client::Client(std::string cpath)
 	this->SCRIPT_LIST = new std::vector<Script>();
 
 	// Read configuration settings and set the appropriate members
-	this->readConfig(cpath);
+	this->readConfig(cpath);	
 }
 
 Client::~Client()
@@ -73,7 +73,7 @@ void Client::gather()
 
 	while (RUNNING)
 	{
-		std::cout << "New GATHER cycle." << std::endl;
+		//std::cout << "New GATHER cycle." << std::endl;
 		//log("test", 1, 1); log ERROR with error code 1
 		//log("test", 0, 0); log WARN with no error code
 		//log("test", 0, 1); log WARN with error code 1
@@ -133,7 +133,7 @@ void Client::administration()
 
 	while (RUNNING)
 	{	
-		std::cout << "NEW ADMIN LOOP CYCLE" << std::endl;
+		//std::cout << "NEW ADMIN LOOP CYCLE" << std::endl;
 
 		if (!LOGGED_IN_)
 			boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -180,7 +180,7 @@ int Client::accountAdministration()
 
 				if (_current->BLOCKED)
 				{
-					std::cout << "Your account is blocked on this machine and I cannot allow you to log in." << std::endl;
+					//std::cout << "Your account is blocked on this machine and I cannot allow you to log in." << std::endl;
 					kick();
 
 					return _RETURN;
@@ -197,7 +197,7 @@ int Client::accountAdministration()
 		std::vector<std::string>::iterator _exp_it = std::find(this->EXPIRED_ACCOUNTS->begin(), this->EXPIRED_ACCOUNTS->end(), _u);
 		if (_exp_it != this->EXPIRED_ACCOUNTS->end())
 		{
-			std::cout << "Your account time limit has already expired on this machine, or another, and you are not allowed to log back in." << std::endl;
+			//std::cout << "Your account time limit has already expired on this machine, or another, and you are not allowed to log back in." << std::endl;
 			// Kick the account
 			kick();
 
@@ -212,7 +212,7 @@ int Client::accountAdministration()
 			/// Display messages in whatever time sequence you decide here, so any future changes will need to be accounted for here
 			if (_cTime >= _track_itr->second)
 			{
-				std::cout << "Your account time limit has expired and you will be kicked from the machine now." << std::endl;
+				//std::cout << "Your account time limit has expired and you will be kicked from the machine now." << std::endl;
 				this->EXPIRED_ACCOUNTS->push_back(_u);
 
 				// Kick the account
@@ -222,7 +222,7 @@ int Client::accountAdministration()
 			}
 			if (_cTime - (15 * 60) >= _track_itr->second)
 			{
-				std::cout << "Your account time limit has 15 minutes left before I will log you out from this machine." << std::endl;
+				//std::cout << "Your account time limit has 15 minutes left before I will log you out from this machine." << std::endl;
 
 				// TODO::: Set some sort of message flag 
 
@@ -230,7 +230,7 @@ int Client::accountAdministration()
 			}
 			if (_cTime - (5 * 60) >= _track_itr->second)
 			{
-				std::cout << "Your account time limit has 5 minutes left before I will log you out from this machine." << std::endl;
+				//std::cout << "Your account time limit has 5 minutes left before I will log you out from this machine." << std::endl;
 
 				// TODO::: Set some soft of message flag
 
@@ -243,15 +243,16 @@ int Client::accountAdministration()
 			/**
 			_current is NULL ...error!
 			**/
-			_current = new Account();
+			if(_current == NULL)
+				_current = new Account();
 
-			std::cout << "This is the first time I've encountered your Account and it is a monitored account so I will begin tracking your logged in time from now until expiration." << std::endl;
+			//std::cout << "This is the first time I've encountered your Account and it is a monitored account so I will begin tracking your logged in time from now until expiration." << std::endl;
 			this->ACCOUNTS_TRACKED->insert(
 				std::pair<std::string, time_t>(
 					_u, 
 					time(0) + (_current->HOUR*3600)
 					)
-			);
+			);			
 		}
 		_RETURN = static_cast<int>(GetLastError());
 	}
@@ -274,15 +275,14 @@ void Client::network()
 		else
 		{
 		}
-		/*
+		
 		boost::asio::io_service io_service;
 		tcp::resolver r(io_service);
 		NetClient nc_(io_service);
 		nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
 		io_service.run();
 
-		boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-		*/
+		boost::this_thread::sleep(boost::posix_time::milliseconds(500));		
 	}	
 }
 
@@ -389,7 +389,7 @@ bool Client::isProgramRunning(std::string p)
 				std::string::const_iterator end = s.end();
 				if (boost::regex_search(start, end, _results, _program))
 				{
-					std::cout << "Program: " << pexe_ << " Process: " << s << std::endl;
+					//std::cout << "Program: " << pexe_ << " Process: " << s << std::endl;
 					return true;
 				}
 
@@ -534,35 +534,70 @@ void Client::readConfig(std::string file)
 			- Script time
 		**/
 		this->SERVER_ = _pt.get<std::string>("server");
-		this->PORT_ = _pt.get<int>("port");
+		this->PORT_ = _pt.get<std::string>("port");//_pt.get<int>("port");
 		this->LOG_FILE_ = _pt.get<std::string>("log");
 		
 		BOOST_FOREACH(boost::property_tree::ptree::value_type &v, _pt.get_child("Users")) {			
-			Account _a;
+			Account *_a = new Account();
 			if (v.first == "Account")
 			{
-				_a.NAME_REGEX = v.second.get_child("name").data().c_str();
-				_a.BLOCKED = atoi(v.second.get_child("blocked").data().c_str());
-				_a.HOUR = v.second.get<int>("hour", 2);
+				char *_nregex = new char[v.second.get_child("name").data().length() +1];
+				strcpy(_nregex, v.second.get_child("name").data().c_str());//_a->NAME_REGEX = v.second.get_child("name").data().c_str();
+				_a->NAME_REGEX = _nregex;
+				_a->BLOCKED = atoi(v.second.get_child("blocked").data().c_str());
+				_a->HOUR = v.second.get<int>("hour", 2);
 			}
-			this->MONITORED_ACCOUNTS->push_back(_a);
+			this->MONITORED_ACCOUNTS->push_back(*_a);
 		}
 		
 		BOOST_FOREACH(boost::property_tree::ptree::value_type &v, _pt.get_child("Commands")) {
-			Script _s;
+			Script *_s = new Script();
 			int _ID = 0;
 			if (v.first == "command")
 			{
-				_s._id = _ID;
+				_s->_id = _ID;
 				
-				_s._name = v.second.get_child("path").data();
+				_s->_name = v.second.get_child("path").data();
 
-				///TODO:: design the day time schema to execute commands by
+				/// Days of the week to execute the script
+				string _d = v.second.get_child("day").data();
+				std::vector<std::string> _days;
+				boost::split(_days, _d, boost::is_any_of(":"));
+				if (_days.size() == 1)
+				{
+					_s->_weekdays[7] = { 1 };
+				}
+				else
+				{
+					_s->_weekdays[7] = { 0 };
+					std::vector<std::string>::iterator it;
+					for (it = _days.begin(); it != _days.end(); it++)
+					{
+						int _index = stoi(*it);
+						if(_index > 0)
+							_s->_weekdays[_index-1] = 1;
+					}
+				}
+				/// Time to execute the script 
+				string _t = v.second.get_child("time").data();
+				std::vector<std::string> _time;
+				boost::split(_time, _t, boost::is_any_of(":"));
+				if (_time.size() > 1)
+				{
+					_s->_hour = stoi(_time.at(0));
+					_s->_minute = stoi(_time.at(1));
+				}
+				if (_time.size() == 1 && stoi(_time.at(0)) < 25)
+				{
+					_s->_hour = stoi(_time.at(0));
+					_s->_minute = 0;
+				}
+
 				std::string _repeat = v.second.get_child("repeat").data();
-				_s._repeat = boost::iequals("False", _repeat);
+				_s->_repeat = boost::iequals("False", _repeat);
 				_ID++;
 			}
-			this->SCRIPT_LIST->push_back(_s);
+			this->SCRIPT_LIST->push_back(*_s);
 		}
 	}
 	catch (std::exception &e)

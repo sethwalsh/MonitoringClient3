@@ -15,7 +15,10 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/bind.hpp>
+#include <boost/asio.hpp>
 #include <iostream>
+//#include <boost/asio/ssl.hpp>
+
 
 using boost::asio::deadline_timer;
 using boost::asio::ip::tcp;
@@ -182,12 +185,16 @@ private:
 
 	void start_read()
 	{
+		std::cout << "start_read: " << std::endl;
+
 		// Set a deadline for the read operation.
 		deadline_.expires_from_now(boost::posix_time::seconds(30));
 
 		// Start an asynchronous operation to read a newline-delimited message.
 		boost::asio::async_read_until(socket_, input_buffer_, '\n',
 			boost::bind(&NetClient::handle_read, this, _1));
+		
+		//socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&NetClient::handle_read, this, _1));
 	}
 
 	void handle_read(const boost::system::error_code& ec)
@@ -222,10 +229,22 @@ private:
 	{
 		if (stopped_)
 			return;
+		
+		// Build event list
+
+		// Send events
 
 		// Start an asynchronous operation to send a heartbeat message.
-		boost::asio::async_write(socket_, boost::asio::buffer("20011abcdefghijkl", 17),
-			boost::bind(&NetClient::handle_write, this, _1));
+		std::vector<std::string>::iterator it;
+		EVENTS.push_back("20012abcdefghijkl\n");
+		EVENTS.push_back("20012helloworldhi\n");
+		for (it = EVENTS.begin(); it != EVENTS.end(); it++)
+		{
+			boost::asio::async_write(socket_, boost::asio::buffer(*it, (*it).length()),
+				boost::bind(&NetClient::handle_write, this, _1));
+		}
+		//boost::asio::async_write(socket_, boost::asio::buffer("20011abcdefghijkl", 17),
+		//	boost::bind(&NetClient::handle_write, this, _1));
 	}
 	
 	void handle_write(const boost::system::error_code& ec)
@@ -270,10 +289,19 @@ private:
 		deadline_.async_wait(boost::bind(&NetClient::check_deadline, this));
 	}
 
+	void get_events()
+	{
+
+	}
+
 private:
 	bool stopped_;
 	tcp::socket socket_;
 	boost::asio::streambuf input_buffer_;
+	char data_[1024];
 	deadline_timer deadline_;
 	deadline_timer heartbeat_timer_;
+
+	std::vector<std::string> EVENTS;
+	uint16_t SENT;
 };

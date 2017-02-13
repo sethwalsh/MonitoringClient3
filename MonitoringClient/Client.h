@@ -146,7 +146,7 @@ private:
 	std::string SERVER_;
 	std::string PORT_;
 	std::string LOG_FILE_ = "log.txt";
-
+		
 	// Store the currently logged in user name as a string pointer
 	std::string CURRENT_USER;
 

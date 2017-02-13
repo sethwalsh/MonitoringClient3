@@ -8,5 +8,5 @@ struct Script
 	int _hour;
 	int _minute;
 	bool _repeat;
-	int _weekdays[6]{ 0 };
+	int _weekdays[7]{ 0 };
 };
