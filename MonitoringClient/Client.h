@@ -26,6 +26,8 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <wincrypt.h>
+
 /*
 Read Config
 Set member variables
@@ -50,6 +52,7 @@ public:
 
 private:
 	void readConfig(std::string file);
+	std::string md5HashString(const void * data, const size_t size);
 
 	/**
 		scriptAdministration - execute any scripts that have been configured to run like system cleanup etc.
@@ -111,8 +114,10 @@ private:
 
 	/**
 		buildPacket - converts programs found running into a binary representative string indicating running or not
+
+		@param flag	int flag for the packet
 	**/
-	void *buildPacket();
+	void *buildPacket(int flag);
 
 	/**
 		writeDataToDisk - writes the current minutes program data to a file on disk in case of a system crash to prevent loss of data

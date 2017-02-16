@@ -279,6 +279,14 @@ void Client::network()
 		boost::asio::io_service io_service;
 		tcp::resolver r(io_service);
 		NetClient nc_(io_service);
+
+		/// Build vector of data objects from disk 
+		///	lock file 
+		/// send each object to server
+		/// clear file after confirmation
+		//nc_.setDataObjectVector();
+		buildPacket(1);
+
 		nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
 		io_service.run();
 
@@ -439,9 +447,41 @@ void Client::buildDataObject()
 	this->data_mtx_.unlock();
 }
 
-void * Client::buildPacket()
+void * Client::buildPacket(int flag)
 {
-	char *PACKET_;
+	/**
+		Total size -- 4096 bytes per packet
+
+		Flag	1
+		Size	3
+		Payload	N
+		MD5		32
+	**/
+	std::vector<unsigned char*> PACKETS_;
+	unsigned char PACKET_[4096] = { '0' };
+	int MAX_PAYLOAD_SIZE_ = 4060;
+	PACKET_[0] = flag;
+	int CURRENT_BYTES_USED_ = 0;
+	// read entire file into a byte array?  
+	// get length for size / divisions / etc
+	///I"M HERE!!
+	std::vector<std::string> *lines_ = new std::vector<std::string>();
+	std::string line_;
+	
+	data_mtx_.lock();
+	std::ifstream in_("saved_data.txt");
+
+	while (std::getline(in_, line_)) {
+		/// If current EVENT_SIZE <= MAX_PAYLOAD_SIZE - CURRENT_BYTES_USED_ 
+		///		--- add to current packet
+		///	else
+		///		--- push current packet to list and create a new packet
+		//lines_->push_back(md5HashString(line_.c_str(), line_.length()));
+		lines_->push_back(line_);
+	}
+	data_mtx_.unlock();
+
+
 	return (void*)PACKET_;
 }
 
@@ -631,6 +671,42 @@ void Client::readProgramFile(std::string path)
 	{
 
 	}
+}
+
+std::string Client::md5HashString(const void * data, const size_t size)
+{
+	HCRYPTPROV hProv = NULL;
+	HCRYPTPROV hHash = NULL;
+	if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+		std::cout << "Failed to get context" << std::endl;
+	if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
+	{
+		CryptReleaseContext(hProv, 0);
+	}
+	
+	if (!CryptHashData(hHash, static_cast<const BYTE*>(data), size, 0)) {
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+	}
+	DWORD cbHashSize = 0, dwCount = sizeof(DWORD);
+	if (!CryptGetHashParam(hHash, HP_HASHSIZE, (BYTE *)&cbHashSize, &dwCount, 0)) {
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+	}
+	std::vector<BYTE> buffer(cbHashSize);
+	if (!CryptGetHashParam(hHash, HP_HASHVAL, reinterpret_cast<BYTE*>(&buffer[0]), &cbHashSize, 0)) {
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+	}
+
+	std::ostringstream oss;
+	for (std::vector<BYTE>::const_iterator iter = buffer.begin(); iter != buffer.end(); ++iter) {
+		oss.fill('0');
+		oss.width(2);
+		oss << std::hex << static_cast<const int>(*iter);
+	}
+
+	return oss.str();
 }
 
 int Client::scriptAdministration()

@@ -18,7 +18,8 @@
 #include <boost/asio.hpp>
 #include <iostream>
 //#include <boost/asio/ssl.hpp>
-
+#include <boost/thread.hpp>
+#include <fstream>
 
 using boost::asio::deadline_timer;
 using boost::asio::ip::tcp;
@@ -231,20 +232,21 @@ private:
 			return;
 		
 		// Build event list
+		get_events();
 
 		// Send events
-
+		
 		// Start an asynchronous operation to send a heartbeat message.
 		std::vector<std::string>::iterator it;
-		EVENTS.push_back("20012abcdefghijkl\n");
-		EVENTS.push_back("20012helloworldhi\n");
+		EVENTS.push_back("20012abcdefghijkl");
+		EVENTS.push_back("20012helloworldhi");
 		for (it = EVENTS.begin(); it != EVENTS.end(); it++)
 		{
 			boost::asio::async_write(socket_, boost::asio::buffer(*it, (*it).length()),
 				boost::bind(&NetClient::handle_write, this, _1));
 		}
-		//boost::asio::async_write(socket_, boost::asio::buffer("20011abcdefghijkl", 17),
-		//	boost::bind(&NetClient::handle_write, this, _1));
+		boost::asio::async_write(socket_, boost::asio::buffer("\n", 1),
+			boost::bind(&NetClient::handle_write, this, _1));
 	}
 	
 	void handle_write(const boost::system::error_code& ec)
@@ -291,7 +293,15 @@ private:
 
 	void get_events()
 	{
+		std::vector<std::string> lines_;
+		std::string line_;		
 
+		mtx_.lock();
+		std::ifstream in_("saved_data.txt");
+		while (std::getline(in_, line_)) {
+			lines_.push_back(line_);
+		}
+		mtx_.unlock();
 	}
 
 private:
@@ -304,4 +314,5 @@ private:
 
 	std::vector<std::string> EVENTS;
 	uint16_t SENT;
+	boost::mutex mtx_;
 };
