@@ -462,24 +462,60 @@ void * Client::buildPacket(int flag)
 	int MAX_PAYLOAD_SIZE_ = 4060;
 	PACKET_[0] = flag;
 	int CURRENT_BYTES_USED_ = 0;
+
+	
+	std::vector<Data*>::iterator it;
+	this->data_mtx_.lock();
+	for (it = this->DATA_LIST->begin(); it != this->DATA_LIST->end(); it++)
+	{
+		unsigned char *EVENT = NULL;
+		std::stringstream sstr;
+
+		uint16_t eflag_ = 0x3;		
+		
+		sstr << (*it)->getTime();		
+		uint16_t tsize_ = sstr.str().length();		
+		sstr.str(std::string());
+		
+		sstr << (*it)->getData();
+		uint16_t esize_ = sstr.str().length();
+		sstr.str(std::string());
+		
+		sstr << (*it)->getUser();
+		uint16_t usize_ = sstr.str().length();
+		sstr.str(std::string());
+
+		uint16_t psize_ = tsize_ + esize_ + usize_;
+
+		EVENT->[0] = eflag_ & 0xFF;
+		EVENT[1] = eflag_ >> 8;
+		EVENT[2] = psize_ & 0xFF;
+		EVENT[3] = psize_ >> 8;
+		EVENT[4] = usize_ & 0xFF;
+		EVENT[5] = usize_ >> 8;
+		EVENT[6] = tsize_ & 0xFF;
+		EVENT[7] = tsize_ >> 8;
+
+
+	}
+	this->data_mtx_.unlock();
+
 	// read entire file into a byte array?  
 	// get length for size / divisions / etc
 	///I"M HERE!!
-	std::vector<std::string> *lines_ = new std::vector<std::string>();
-	std::string line_;
-	
-	data_mtx_.lock();
-	std::ifstream in_("saved_data.txt");
-
-	while (std::getline(in_, line_)) {
+	//std::vector<std::string> *lines_ = new std::vector<std::string>();
+	//std::string line_;	
+	//data_mtx_.lock();
+	//std::ifstream in_("saved_data.txt");
+	//while (std::getline(in_, line_)) {
 		/// If current EVENT_SIZE <= MAX_PAYLOAD_SIZE - CURRENT_BYTES_USED_ 
 		///		--- add to current packet
 		///	else
 		///		--- push current packet to list and create a new packet
 		//lines_->push_back(md5HashString(line_.c_str(), line_.length()));
-		lines_->push_back(line_);
-	}
-	data_mtx_.unlock();
+	//	lines_->push_back(line_);
+	//}
+	//data_mtx_.unlock();
 
 
 	return (void*)PACKET_;

@@ -12,6 +12,7 @@ public:
 	~Data();
 
 	void setUser(std::string user);
+	std::string getUser();
 	void setTime();
 	time_t getTime();
 	std::vector<bool>* getData();

@@ -19,6 +19,11 @@ void Data::setUser(std::string user)
 	this->USER = user;
 }
 
+std::string Data::getUser()
+{
+	return this->USER;
+}
+
 void Data::setTime()
 {
 	time_t temp = time(0);
