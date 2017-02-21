@@ -117,7 +117,7 @@ private:
 
 		@param flag	int flag for the packet
 	**/
-	void *buildPacket(int flag);
+	std::vector<unsigned char> *buildPacket(uint16_t flag);
 
 	/**
 		writeDataToDisk - writes the current minutes program data to a file on disk in case of a system crash to prevent loss of data

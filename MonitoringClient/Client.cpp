@@ -275,20 +275,22 @@ void Client::network()
 		else
 		{
 		}
-		
-		boost::asio::io_service io_service;
-		tcp::resolver r(io_service);
-		NetClient nc_(io_service);
 
 		/// Build vector of data objects from disk 
 		///	lock file 
 		/// send each object to server
 		/// clear file after confirmation
-		//nc_.setDataObjectVector();
-		buildPacket(1);
+		if (!this->DATA_LIST->empty())
+		{
+			boost::asio::io_service io_service;
+			tcp::resolver r(io_service);
+			NetClient nc_(io_service);
 
-		nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
-		io_service.run();
+			std::vector<unsigned char> *packets_ = buildPacket(1);
+
+			nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
+			io_service.run();
+		}		
 
 		boost::this_thread::sleep(boost::posix_time::milliseconds(500));		
 	}	
@@ -447,7 +449,7 @@ void Client::buildDataObject()
 	this->data_mtx_.unlock();
 }
 
-void * Client::buildPacket(int flag)
+std::vector<unsigned char> * Client::buildPacket(uint16_t flag)
 {
 	/**
 		Total size -- 4096 bytes per packet
@@ -457,68 +459,90 @@ void * Client::buildPacket(int flag)
 		Payload	N
 		MD5		32
 	**/
-	std::vector<unsigned char*> PACKETS_;
-	unsigned char PACKET_[4096] = { '0' };
-	int MAX_PAYLOAD_SIZE_ = 4060;
-	PACKET_[0] = flag;
-	int CURRENT_BYTES_USED_ = 0;
+	if (this->DATA_LIST->empty())
+		return NULL;
+	std::stringstream sstr;
+	std::vector<unsigned char> *PACKETS_ = new std::vector<unsigned char>();
+	//std::vector<unsigned char> PACKET_;
 
-	
+	PACKETS_->insert(PACKETS_->begin() + 0, flag & 0xFF);
+	PACKETS_->insert(PACKETS_->begin() + 1, flag >> 8);
+		
 	std::vector<Data*>::iterator it;
 	this->data_mtx_.lock();
 	for (it = this->DATA_LIST->begin(); it != this->DATA_LIST->end(); it++)
 	{
-		unsigned char *EVENT = NULL;
-		std::stringstream sstr;
+		//unsigned char *EVENT = new unsigned char[4096];
+		//unsigned char EVENT[4096];
+		std::vector<unsigned char> EVENT;		
+		std::string timestr_, eventstr_, userstr_;
 
-		uint16_t eflag_ = 0x3;		
+		uint16_t eflag_ = 3;		
 		
-		sstr << (*it)->getTime();		
-		uint16_t tsize_ = sstr.str().length();		
+		/// TIMESTAMP
+		sstr << (*it)->getTime();
+		timestr_ = sstr.str();
+		uint16_t tsize_ = timestr_.length();		
 		sstr.str(std::string());
 		
-		sstr << (*it)->getData();
-		uint16_t esize_ = sstr.str().length();
-		sstr.str(std::string());
+		/// EVENT data (program data, etc)
+		std::string out("");
+		std::vector<bool> v = *(*it)->getData();
+		out.reserve(v.size());
+		for (bool b : v)
+		{
+			out += b ? '1' : '0';
+		}
+		//sstr << (*it)->getData();
+		eventstr_ = out;//sstr.str();
+		uint16_t esize_ = eventstr_.length();
+		//sstr.str(std::string());
 		
+		/// USER NAME
 		sstr << (*it)->getUser();
-		uint16_t usize_ = sstr.str().length();
+		userstr_ = sstr.str();
+		uint16_t usize_ = userstr_.length();
 		sstr.str(std::string());
 
 		uint16_t psize_ = tsize_ + esize_ + usize_;
 
-		EVENT->[0] = eflag_ & 0xFF;
-		EVENT[1] = eflag_ >> 8;
-		EVENT[2] = psize_ & 0xFF;
-		EVENT[3] = psize_ >> 8;
-		EVENT[4] = usize_ & 0xFF;
-		EVENT[5] = usize_ >> 8;
-		EVENT[6] = tsize_ & 0xFF;
-		EVENT[7] = tsize_ >> 8;
+		/// uint16_t value = 12345;
+		/// char low = value & 0xFF;
+		/// char hi = value >> 8;
+		/// To reverse: uint16_t value = low | uint16_t(hi) << 8;
+		EVENT.insert(EVENT.begin() + 0, eflag_ & 0xFF);//EVENT.at(0) = eflag_ & 0xFF;
+		EVENT.insert(EVENT.begin() + 1, eflag_ >> 8);//EVENT.at(1) = eflag_ >> 8;
+		EVENT.insert(EVENT.begin() + 2, psize_ & 0xFF);
+		EVENT.insert(EVENT.begin() + 3, psize_ >> 8);
+		EVENT.insert(EVENT.begin() + 4, usize_ & 0xFF);
+		EVENT.insert(EVENT.begin() + 5, usize_ >> 8);
+		EVENT.insert(EVENT.begin() + 6, tsize_ & 0xFF);
+		EVENT.insert(EVENT.begin() + 7, tsize_ >> 8);
+		
+		int i = 8;
+		for (int j = 0; j < esize_; j++)
+		{
+			EVENT.insert(EVENT.begin() + i, (unsigned char)eventstr_.at(j));
+			i++;
+		}
 
+		for (int j = 0; j < tsize_; j++)
+		{
+			EVENT.insert(EVENT.begin() + i, (unsigned char)timestr_.at(j));
+			i++;
+		}
 
+		for (int j = 0; j < usize_; j++)
+		{
+			EVENT.insert(EVENT.begin() + i, (unsigned char)userstr_.at(j));
+			i++;
+		}
+		
+		PACKETS_->insert(PACKETS_->end(), EVENT.begin(), EVENT.end());		
 	}
-	this->data_mtx_.unlock();
+	this->data_mtx_.unlock();	
 
-	// read entire file into a byte array?  
-	// get length for size / divisions / etc
-	///I"M HERE!!
-	//std::vector<std::string> *lines_ = new std::vector<std::string>();
-	//std::string line_;	
-	//data_mtx_.lock();
-	//std::ifstream in_("saved_data.txt");
-	//while (std::getline(in_, line_)) {
-		/// If current EVENT_SIZE <= MAX_PAYLOAD_SIZE - CURRENT_BYTES_USED_ 
-		///		--- add to current packet
-		///	else
-		///		--- push current packet to list and create a new packet
-		//lines_->push_back(md5HashString(line_.c_str(), line_.length()));
-	//	lines_->push_back(line_);
-	//}
-	//data_mtx_.unlock();
-
-
-	return (void*)PACKET_;
+	return PACKETS_;
 }
 
 void Client::writeDataToDisk()
