@@ -286,8 +286,14 @@ void Client::network()
 			tcp::resolver r(io_service);
 			NetClient nc_(io_service);
 
+			//this->data_mtx_.lock();
 			std::vector<unsigned char> *packets_ = buildPacket(1);
-
+			std::string hash = this->md5HashString(packets_, packets_->size());
+			for (int i = 0; i < hash.length(); i++)
+			{
+				unsigned char c_ = hash.at(i);
+				packets_->push_back(c_);
+			}
 			nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
 			io_service.run();
 		}		
@@ -472,8 +478,9 @@ std::vector<unsigned char> * Client::buildPacket(uint16_t flag)
 	this->data_mtx_.lock();
 	for (it = this->DATA_LIST->begin(); it != this->DATA_LIST->end(); it++)
 	{
-		//unsigned char *EVENT = new unsigned char[4096];
-		//unsigned char EVENT[4096];
+		if ((*it)->getNetworkUploaded())
+			continue;		
+
 		std::vector<unsigned char> EVENT;		
 		std::string timestr_, eventstr_, userstr_;
 
@@ -538,7 +545,8 @@ std::vector<unsigned char> * Client::buildPacket(uint16_t flag)
 			i++;
 		}
 		
-		PACKETS_->insert(PACKETS_->end(), EVENT.begin(), EVENT.end());		
+		PACKETS_->insert(PACKETS_->end(), EVENT.begin(), EVENT.end());
+		(*it)->setNetworkUploaded(true);
 	}
 	this->data_mtx_.unlock();	
 
@@ -569,7 +577,12 @@ void Client::writeDataToDisk()
 		else
 			save << "0";
 		count++;
-	}	
+	}
+
+	// If the element at back of list has been added to the network then it is safe to remove it since it was also just written to disk backup
+	if (this->DATA_LIST->back()->getNetworkUploaded())
+		this->DATA_LIST->pop_back();
+
 	this->data_mtx_.unlock();
 	save << "\n";	
 }

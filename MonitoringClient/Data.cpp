@@ -3,7 +3,7 @@
 Data::Data(int pcount)
 {
 	MAX_PROGRAM_COUNT = pcount;
-
+	NETWORK_UPLOADED = false;
 	// Set the initial EVENT to 0
 	this->EVENT = new std::vector<bool>(MAX_PROGRAM_COUNT);
 }
@@ -45,4 +45,14 @@ std::vector<bool>* Data::getData()
 void Data::setDataBit(int pos, bool value)
 {
 	this->EVENT->at(pos) = value;	
+}
+
+void Data::setNetworkUploaded(bool b)
+{
+	this->NETWORK_UPLOADED = b;
+}
+
+bool Data::getNetworkUploaded()
+{
+	return this->NETWORK_UPLOADED;
 }

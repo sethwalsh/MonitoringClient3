@@ -17,10 +17,13 @@ public:
 	time_t getTime();
 	std::vector<bool>* getData();
 	void setDataBit(int pos, bool value);
+	void setNetworkUploaded(bool b);
+	bool getNetworkUploaded();
 
 private:
 	std::vector<bool> *EVENT;
 	std::string USER;
 	int MAX_PROGRAM_COUNT = 0;
 	time_t TIME;
+	bool NETWORK_UPLOADED;
 };
