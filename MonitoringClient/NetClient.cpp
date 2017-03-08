@@ -20,6 +20,7 @@
 //#include <boost/asio/ssl.hpp>
 #include <boost/thread.hpp>
 #include <fstream>
+#include <set>
 
 using boost::asio::deadline_timer;
 using boost::asio::ip::tcp;
@@ -97,8 +98,14 @@ public:
 
 	// Called by the user of the client class to initiate the connection process.
 	// The endpoint iterator will have been obtained using a tcp::resolver.
-	void start(tcp::resolver::iterator endpoint_iter)
+	void start(tcp::resolver::iterator endpoint_iter, std::vector<unsigned char> packets_)
 	{
+		/// Modification:
+		// Add packets_ to the data being sent
+		this->data_mtx_.lock();
+		this->PACKETS_.push_back(packets_);
+		this->data_mtx_.unlock();
+
 		// Start the connect actor.
 		start_connect(endpoint_iter);
 
@@ -192,7 +199,7 @@ private:
 		deadline_.expires_from_now(boost::posix_time::seconds(30));
 
 		// Start an asynchronous operation to read a newline-delimited message.
-		boost::asio::async_read_until(socket_, input_buffer_, '\n',
+		boost::asio::async_read_until(socket_, input_buffer_, "\n\n",
 			boost::bind(&NetClient::handle_read, this, _1));
 		
 		//socket_.async_read_some(boost::asio::buffer(data_, 1024), boost::bind(&NetClient::handle_read, this, _1));
@@ -213,7 +220,20 @@ private:
 			// Empty messages are heartbeats and so ignored.
 			if (!line.empty())
 			{
-				std::cout << "Received: " << line << "\n";
+				//std::cout << "Received: " << line << "\n";
+				this->data_mtx_.lock();
+				std::map<std::string, std::string>::iterator it;
+				for (it = this->hashToEvent.begin(); it != this->hashToEvent.end(); it++)
+				{
+					if (line.compare(it->first) == 0)
+					{
+						/// Remove from EVENTS
+						//this->EVENTS.erase(std::remove(this->EVENTS.begin(), this->EVENTS.end(), it->second), this->EVENTS.end());
+						this->EVENTS.erase(it->second);
+						std::cout << "Removing: " << it->second << std::endl;
+					}
+				}
+				this->data_mtx_.unlock();
 			}
 
 			start_read();
@@ -232,21 +252,49 @@ private:
 			return;
 		
 		// Build event list
-		get_events();
+		//get_events();
 
-		// Send events
-		
-		// Start an asynchronous operation to send a heartbeat message.
-		std::vector<std::string>::iterator it;
-		EVENTS.push_back("20012abcdefghijkl");
-		EVENTS.push_back("20012helloworldhi");
-		for (it = EVENTS.begin(); it != EVENTS.end(); it++)
+		this->data_mtx_.lock();
+		std::vector<std::vector<unsigned char> >::iterator eit;
+		for (eit = this->PACKETS_.begin(); eit != this->PACKETS_.end(); eit++)
 		{
-			boost::asio::async_write(socket_, boost::asio::buffer(*it, (*it).length()),
+			std::string s((*eit).begin(), (*eit).end());
+			//EVENTS.push_back(s);
+			EVENTS.insert(s);
+
+			std::string hash = s.substr(s.length() - 32);
+			this->hashToEvent.insert(std::pair<std::string, std::string>(hash, s)); // 
+		}
+		this->PACKETS_.clear(); /// Clear the vector 
+
+		// Start an asynchronous operation to send a heartbeat message.
+		std::set<std::string>::iterator sit;
+		for (sit = EVENTS.begin(); sit != EVENTS.end(); sit++)
+		{
+			S = *sit;
+			std::cout << "Sending: " << S << std::endl;
+
+			std::ostream os(&output_buffer_);
+
+			boost::asio::async_write(socket_, boost::asio::buffer(S.append("\n\n")),
 				boost::bind(&NetClient::handle_write, this, _1));
 		}
-		boost::asio::async_write(socket_, boost::asio::buffer("\n", 1),
+		/*
+		for (int i = 0; i < EVENTS.size(); i++)
+		{
+			S = EVENTS.at(i);
+			std::cout << S << std::endl;			
+
+			std::ostream os(&output_buffer_);
+
+			boost::asio::async_write(socket_, boost::asio::buffer(S),
+				boost::bind(&NetClient::handle_write, this, _1));
+		}
+		*/
+		boost::asio::async_write(socket_, boost::asio::buffer("\n\n"),
 			boost::bind(&NetClient::handle_write, this, _1));
+
+		this->data_mtx_.unlock(); /// Unlock the mutex
 	}
 	
 	void handle_write(const boost::system::error_code& ec)
@@ -257,8 +305,8 @@ private:
 		if (!ec)
 		{
 			// Wait 10 seconds before sending the next heartbeat.
-			heartbeat_timer_.expires_from_now(boost::posix_time::seconds(10));
-			heartbeat_timer_.async_wait(boost::bind(&NetClient::start_write, this));
+			//heartbeat_timer_.expires_from_now(boost::posix_time::seconds(10));
+			//heartbeat_timer_.async_wait(boost::bind(&NetClient::start_write, this));
 		}
 		else
 		{
@@ -291,6 +339,7 @@ private:
 		deadline_.async_wait(boost::bind(&NetClient::check_deadline, this));
 	}
 
+	/*
 	void get_events()
 	{
 		std::vector<std::string> lines_;
@@ -303,16 +352,21 @@ private:
 		}
 		mtx_.unlock();
 	}
-
+	*/
 private:
 	bool stopped_;
 	tcp::socket socket_;
-	boost::asio::streambuf input_buffer_;
+	boost::asio::streambuf input_buffer_, output_buffer_;
 	char data_[1024];
 	deadline_timer deadline_;
 	deadline_timer heartbeat_timer_;
 
-	std::vector<std::string> EVENTS;
+	std::set<std::string> EVENTS;
 	uint16_t SENT;
-	boost::mutex mtx_;
+
+	std::string S;
+	std::map<std::string, std::string> hashToEvent;
+
+	std::vector< std::vector<unsigned char> > PACKETS_;
+	boost::mutex data_mtx_, mtx_;
 };

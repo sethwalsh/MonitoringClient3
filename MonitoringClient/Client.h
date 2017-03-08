@@ -28,6 +28,9 @@
 
 #include <wincrypt.h>
 
+#include <locale>
+#include <codecvt>
+
 /*
 Read Config
 Set member variables
@@ -52,6 +55,8 @@ public:
 
 private:
 	void readConfig(std::string file);
+	void displayMessageToUserEnvironment(std::string message);
+
 	std::string md5HashString(const void * data, const size_t size);
 
 	/**

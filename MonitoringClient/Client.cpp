@@ -38,6 +38,9 @@ Client::~Client()
 	delete EXPIRED_ACCOUNTS;
 	delete ACCOUNTS_TRACKED;
 	delete PROGRAM_LIST;
+	
+	for (auto it = DATA_LIST->begin(); it != DATA_LIST->end(); ++it)
+		delete *it;
 	delete DATA_LIST;
 	delete SCRIPT_LIST;
 }
@@ -95,6 +98,9 @@ void Client::gather()
 
 				// Reset the current minute
 				_CURRENT_MINUTE = now->tm_min;
+
+				/// Test
+				//displayMessageToUserEnvironment("hello world here is my test message");
 			}
 			/*
 			- Get current programs in use
@@ -181,6 +187,9 @@ int Client::accountAdministration()
 				if (_current->BLOCKED)
 				{
 					//std::cout << "Your account is blocked on this machine and I cannot allow you to log in." << std::endl;
+					displayMessageToUserEnvironment("Your account is blocked on this machine and you cannot be allowed to log in.");
+
+					// Kick the account
 					kick();
 
 					return _RETURN;
@@ -198,6 +207,8 @@ int Client::accountAdministration()
 		if (_exp_it != this->EXPIRED_ACCOUNTS->end())
 		{
 			//std::cout << "Your account time limit has already expired on this machine, or another, and you are not allowed to log back in." << std::endl;
+			displayMessageToUserEnvironment("Your account time limit as already expired on this machine, or another, and you are not allowed to log back in with this account.");
+
 			// Kick the account
 			kick();
 
@@ -213,6 +224,8 @@ int Client::accountAdministration()
 			if (_cTime >= _track_itr->second)
 			{
 				//std::cout << "Your account time limit has expired and you will be kicked from the machine now." << std::endl;
+				displayMessageToUserEnvironment("Your account time limit has expired, and you will be kicked from the machine now.");
+
 				this->EXPIRED_ACCOUNTS->push_back(_u);
 
 				// Kick the account
@@ -223,6 +236,7 @@ int Client::accountAdministration()
 			if (_cTime - (15 * 60) >= _track_itr->second)
 			{
 				//std::cout << "Your account time limit has 15 minutes left before I will log you out from this machine." << std::endl;
+				displayMessageToUserEnvironment("Your account time limit has 15 minutes left before you will be logged out from this machine.");
 
 				// TODO::: Set some sort of message flag 
 
@@ -231,6 +245,7 @@ int Client::accountAdministration()
 			if (_cTime - (5 * 60) >= _track_itr->second)
 			{
 				//std::cout << "Your account time limit has 5 minutes left before I will log you out from this machine." << std::endl;
+				displayMessageToUserEnvironment("Your account time limit has 5 minutes left before you will be logged out from this machine.");
 
 				// TODO::: Set some soft of message flag
 
@@ -252,12 +267,18 @@ int Client::accountAdministration()
 					_u, 
 					time(0) + (_current->HOUR*3600)
 					)
-			);			
+			);	
+
+			/// Test
+			//delete _current;
 		}
 		_RETURN = static_cast<int>(GetLastError());
+
+		/// Test
+		//delete _current;
 	}
 	catch (std::exception &e) {
-		_RETURN = static_cast<int>(GetLastError());
+		_RETURN = static_cast<int>(GetLastError());		
 		return _RETURN;
 	}
 
@@ -288,14 +309,25 @@ void Client::network()
 
 			//this->data_mtx_.lock();
 			std::vector<unsigned char> *packets_ = buildPacket(1);
-			std::string hash = this->md5HashString(packets_, packets_->size());
-			for (int i = 0; i < hash.length(); i++)
+			if (packets_->size() > 2)
 			{
-				unsigned char c_ = hash.at(i);
-				packets_->push_back(c_);
+				std::string hash = this->md5HashString(packets_, packets_->size());
+				for (int i = 0; i < hash.length(); i++)
+				{
+					unsigned char c_ = hash.at(i);
+					packets_->push_back(c_);
+				}
+				nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())), *packets_);
+				io_service.run();
 			}
-			nc_.start(r.resolve(tcp::resolver::query(this->getServer(), this->getPort())));
-			io_service.run();
+			else
+			{
+				//std::cout << "Failed to get the correct size packet" << std::endl;
+				nc_.stop();
+			}
+
+			/// Testing
+			delete packets_;
 		}		
 
 		boost::this_thread::sleep(boost::posix_time::milliseconds(500));		
@@ -437,7 +469,7 @@ void Client::resetProgramCount()
 
 void Client::buildDataObject()
 {
-	Data *d = new Data(this->PROGRAM_LIST->size());
+	Data *d = new Data(this->PROGRAM_LIST->size()); /* Delete not accounted for yet */
 	d->setTime();	
 	d->setUser(this->CURRENT_USER);
 
@@ -477,7 +509,7 @@ std::vector<unsigned char> * Client::buildPacket(uint16_t flag)
 	std::vector<Data*>::iterator it;
 	this->data_mtx_.lock();
 	for (it = this->DATA_LIST->begin(); it != this->DATA_LIST->end(); it++)
-	{
+	{		
 		if ((*it)->getNetworkUploaded())
 			continue;		
 
@@ -555,36 +587,71 @@ std::vector<unsigned char> * Client::buildPacket(uint16_t flag)
 
 void Client::writeDataToDisk()
 {
-	this->data_mtx_.lock();
-	time_t temp = this->DATA_LIST->back()->getTime();
-	this->data_mtx_.unlock();
-	
+	std::vector<Data*>::iterator di;
 	std::ofstream save("saved_data.txt", std::ios_base::app | std::ios_base::out);
-
-	unsigned int _DATA = 0;
-	save << temp << "," << this->getCurrentUser() << ",";
-	int count = 0;
-
 	this->data_mtx_.lock();
-	std::vector<bool>::iterator it;	
-	std::vector<bool> *_tempData = this->DATA_LIST->back()->getData();
-	for (it = _tempData->begin(); it != _tempData->end(); it++)
+
+	for (di = this->DATA_LIST->begin(); di != this->DATA_LIST->end(); ++di)
 	{
-		if ((*it) == TRUE)
+		if ((*di)->getNetworkUploaded())
 		{
-			save << "1";
-		}
-		else
-			save << "0";
-		count++;
+			/// Write to disk
+			time_t temp = (*di)->getTime();
+			unsigned int _DATA = 0;
+			save << temp << "," << this->getCurrentUser() << ",";
+			int count = 0;
+			std::vector<bool>::iterator it;
+			std::vector<bool> *_tempData = this->DATA_LIST->back()->getData();
+			for (it = _tempData->begin(); it != _tempData->end(); ++it)
+			{
+				if ((*it) == TRUE)
+				{
+					save << "1";
+				}
+				else
+					save << "0";
+				count++;
+			}
+			save << "\n";
+
+			/// Remove
+			delete * di;
+			di = this->DATA_LIST->erase(di);
+		}		
 	}
 
-	// If the element at back of list has been added to the network then it is safe to remove it since it was also just written to disk backup
-	if (this->DATA_LIST->back()->getNetworkUploaded())
-		this->DATA_LIST->pop_back();
-
 	this->data_mtx_.unlock();
-	save << "\n";	
+
+	//this->data_mtx_.lock();
+	//time_t temp = this->DATA_LIST->back()->getTime();
+	//this->data_mtx_.unlock();
+	
+	//std::ofstream save("saved_data.txt", std::ios_base::app | std::ios_base::out);
+
+	//unsigned int _DATA = 0;
+	//save << temp << "," << this->getCurrentUser() << ",";
+	//int count = 0;
+
+	//this->data_mtx_.lock();
+	//std::vector<bool>::iterator it;	
+	//std::vector<bool> *_tempData = this->DATA_LIST->back()->getData();
+	//for (it = _tempData->begin(); it != _tempData->end(); it++)
+	//{
+	//	if ((*it) == TRUE)
+	//	{
+	//		save << "1";
+	//	}
+	//	else
+	//		save << "0";
+	//	count++;
+	//}
+
+	// If the element at back of list has been added to the network then it is safe to remove it since it was also just written to disk backup
+	//if (this->DATA_LIST->back()->getNetworkUploaded())
+	//	this->DATA_LIST->pop_back();
+
+	//this->data_mtx_.unlock();
+	//save << "\n";	
 }
 
 std::string Client::getCurrentUser()
@@ -743,6 +810,37 @@ void Client::readProgramFile(std::string path)
 	catch (std::exception &e)
 	{
 
+	}
+}
+
+void Client::displayMessageToUserEnvironment(std::string message)
+{
+	DWORD physicalConsoleSession = WTSGetActiveConsoleSessionId();
+	if (0xFFFFFFFF != physicalConsoleSession)
+	{
+		wostringstream b;
+		
+		LPWSTR title = const_cast<wchar_t*>(L"Guest Account Message");
+		DWORD titleLength = static_cast<DWORD>(wcslen(title) * sizeof(*title));
+		
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		std::wstring wideMessage = converter.from_bytes(message);
+
+		LPSTR message_ = const_cast<char*>(message.c_str());
+		DWORD messageLength = static_cast<DWORD>(message.length());
+		DWORD response;
+
+		WTSSendMessageA(
+			WTS_CURRENT_SERVER_HANDLE,
+			physicalConsoleSession,
+			"Guest Account Message",
+			titleLength,
+			message_,
+			messageLength,
+			MB_OK | MB_ICONINFORMATION,
+			0,
+			&response,
+			FALSE);
 	}
 }
 
