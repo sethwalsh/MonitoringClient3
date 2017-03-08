@@ -19,6 +19,7 @@ namespace MonitoringClientService
 
         protected override void OnStart(string[] args)
         {
+            /// For now just create a new Client
         }
 
         protected override void OnStop()
